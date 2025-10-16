@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fa">
+<head>
+<meta charset="utf-8">
+<title>Chatran شیک 🤖</title>
+<style>
+body{
+  margin:0;
+  font-family:sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+#chat-container{
+  width:400px;
+  height:600px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+#chatbox{
+  flex-grow:1;
+  padding:10px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+}
+.msg{
+  margin:5px 0;
+  padding:10px 14px;
+  border-radius:16px;
+  max-width:70%;
+  word-wrap:break-word;
+  font-size:14px;
+  line-height:1.4;
+}
+.user{
+  background: #ffcc00aa;
+  color: #000;
+  align-self:flex-end;
+  text-align:right;
+}
+.bot{
+  background: #ffffff33;
+  color:#fff;
+  align-self:flex-start;
+  text-align:left;
+}
+#input-area{
+  display:flex;
+  padding:10px;
+  background: rgba(255,255,255,0.1);
+}
+#msg{
+  flex-grow:1;
+  padding:8px;
+  border-radius:12px;
+  border:none;
+  outline:none;
+  background: rgba(255,255,255,0.2);
+  color:white;
+}
+button{
+  background:#ffcc00;
+  border:none;
+  color:#000;
+  border-radius:12px;
+  margin-left:5px;
+  padding:8px 12px;
+  cursor:pointer;
+}
+button:hover{background:#ffd633;}
+</style>
+</head>
+<body>
+<div id="chat-container">
+  <div id="chatbox"></div>
+  <div id="input-area">
+    <input id="msg" placeholder="پیام خود را بنویسید..." autocomplete="off">
+    <button onclick="send()">ارسال</button>
+  </div>
+</div>
+
+<script>
+// حافظه مدل
+let model = JSON.parse(localStorage.getItem("chatran_model") || "[]");
+let lastPrompt = null;
+const blacklist=["گاییدم","کسکش","کیر","کص","کونی","کیرم","پوفک","fuck","shit","bitch","asshole","idiot","dumb"];
+
+// افزودن پیام به صفحه
+function addMessage(text,sender){
+  const div=document.createElement("div");
+  div.className="msg "+sender;
+  div.innerText=text;
+  document.getElementById("chatbox").appendChild(div);
+  div.scrollIntoView({behavior:"smooth"});
+}
+
+// تولید پاسخ
+function generateText(prompt){
+  const lower = prompt.toLowerCase();
+  if(lower.includes("سازنده تو کی هست") || lower.includes("تو رو کی ساخته")) return "Chatran";
+  const existing = model.find(m=>m[0]===prompt);
+  if(existing) return existing[1];
+  lastPrompt = prompt;
+  return "من این حرف رو بلد نیستم میشه بهم یاد بدی؟";
+}
+
+// یادگیری
+function learn(input){
+  if(!lastPrompt) return false;
+  if(blacklist.some(w=>input.toLowerCase().includes(w))) {lastPrompt=null; return false;}
+  const exists = model.find(m=>m[0]===lastPrompt && m[1]===input);
+  if(!exists){
+    model.push([lastPrompt,input]);
+    localStorage.setItem("chatran_model",JSON.stringify(model));
+    addMessage("یاد گرفتم، مرسی!","bot");
+    lastPrompt = null;
+    return true;
+  }
+  lastPrompt=null;
+  return false;
+}
+
+// ارسال پیام
+function send(){
+  const input = document.getElementById("msg");
+  const text = input.value.trim();
+  if(!text) return;
+  addMessage(text,"user");
+  input.value="";
+  if(learn(text)) return;
+  setTimeout(()=>{
+    const reply = generateText(text);
+    addMessage(reply,"bot");
+  },200);
+}
+
+document.getElementById("msg").addEventListener("keydown",function(e){
+  if(e.key==="Enter") send();
+});
+</script>
+</body>
+</html>
