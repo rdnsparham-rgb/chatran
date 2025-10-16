@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fa">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chatran 🤖</title>
+<style>
+body { background:#0f172a; color:#e2e8f0; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; height:100vh; margin:0; }
+#chatbox { width:90%; max-width:600px; background:#1e293b; border-radius:12px; padding:15px; overflow-y:auto; flex-grow:1; margin-top:20px; display:flex; flex-direction:column; }
+.msg { margin:8px 0; padding:8px 12px; border-radius:10px; max-width:80%; word-wrap:break-word; }
+.user { background:#06b6d4; color:#000; align-self:flex-end; }
+.bot { background:#334155; color:#e2e8f0; align-self:flex-start; }
+#input-area { display:flex; width:90%; max-width:600px; margin:10px; }
+input { flex-grow:1; padding:10px; border-radius:8px; border:none; outline:none; background:#1e293b; color:white; }
+button { background:#06b6d4; border:none; color:black; border-radius:8px; margin-left:5px; padding:10px 15px; cursor:pointer; }
+button:hover { background:#22d3ee; }
+</style>
+</head>
+<body>
+<h2>🤖 Chatran — نسخه با مدل زبانی</h2>
+<div id="chatbox"></div>
+<div id="input-area">
+  <input id="msg" placeholder="چیزی بنویس..." autocomplete="off">
+  <button onclick="send()">ارسال</button>
+</div>
+
+<script>
+// مدل مارکوف بارگذاری شده از model.json
+let markovChain = {};
+
+// بارگذاری مدل
+fetch("model.json")
+  .then(res => res.json())
+  .then(data => {
+    markovChain = data;
+    console.log("✅ مدل بارگذاری شد");
+  })
+  .catch(err => console.error("❌ خطا در بارگذاری مدل:", err));
+
+// تابع تولید جمله با مارکوف
+function generateSentence(chain, n=2, maxWords=50) {
+  const keys = Object.keys(chain);
+  if(keys.length === 0) return "مدل هنوز بارگذاری نشده 😅";
+
+  let key = keys[Math.floor(Math.random() * keys.length)];
+  let result = key.split(" ");
+
+  for (let i = 0; i < maxWords; i++) {
+    const nextWords = chain[key];
+    if (!nextWords || nextWords.length === 0) break;
+    const next = nextWords[Math.floor(Math.random() * nextWords.length)];
+    result.push(next);
+    key = result.slice(result.length - n, result.length).join(" ");
+  }
+
+  return result.join(" ");
+}
+
+function addMessage(text, sender) {
+  const div = document.createElement("div");
+  div.className = "msg " + sender;
+  div.innerText = text;
+  document.getElementById("chatbox").appendChild(div);
+  div.scrollIntoView({ behavior: "smooth" });
+}
+
+function send() {
+  const msgInput = document.getElementById("msg");
+  const text = msgInput.value.trim();
+  if (!text) return;
+  addMessage(text, "user");
+  msgInput.value = "";
+
+  // تولید جواب
+  setTimeout(() => {
+    const reply = generateSentence(markovChain);
+    addMessage(reply, "bot");
+  }, 300);
+}
+</script>
+</body>
+</html>
